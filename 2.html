@@ -27,7 +27,6 @@
 </head>
 <body>
   <h1>📡 Datos en Tiempo Real - ESP32</h1>
-
   <div class="dato">Gas: <span id="gas">--</span></div>
   <div class="dato">Temperatura: <span id="temp">--</span> °C</div>
   <div class="dato">Humedad: <span id="hum">--</span> %</div>
@@ -37,10 +36,13 @@
     const clientId = "webClient-" + Math.floor(Math.random() * 10000);
     const client = new Paho.MQTT.Client("broker.emqx.io", 8083, clientId);
 
-    // Cuando llega un mensaje
+    client.onConnectionLost = function (responseObject) {
+      document.getElementById("status").textContent = "❌ Conexión perdida";
+      console.error("Conexión perdida:", responseObject.errorMessage);
+    };
+
     client.onMessageArrived = function (message) {
       console.log("Mensaje recibido:", message.destinationName, message.payloadString);
-
       if (message.destinationName === "esp32/gas") {
         document.getElementById("gas").textContent = message.payloadString;
       } else if (message.destinationName === "esp32/temp") {
@@ -50,13 +52,6 @@
       }
     };
 
-    // Si se pierde la conexión
-    client.onConnectionLost = function (responseObject) {
-      document.getElementById("status").textContent = "❌ Conexión perdida";
-      console.error("Conexión perdida:", responseObject.errorMessage);
-    };
-
-    // Conectarse al broker
     client.connect({
       onSuccess: function () {
         document.getElementById("status").textContent = "✅ Conectado al broker MQTT";
@@ -73,3 +68,4 @@
   </script>
 </body>
 </html>
+
