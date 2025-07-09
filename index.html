@@ -2,8 +2,9 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Monitor ESP32 - Gas y Clima</title>
-  <script src="https://unpkg.com/paho-mqtt/mqttws31.js"></script>
+  <title>Monitor MQTT ESP32</title>
+  <!-- ✅ Librería MQTT desde fuente segura -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/mqttws31.min.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -17,7 +18,7 @@
     }
     .dato {
       font-size: 24px;
-      margin: 15px 0;
+      margin: 10px 0;
     }
     #status {
       margin-top: 20px;
@@ -26,7 +27,7 @@
   </style>
 </head>
 <body>
-  <h1>📡 Datos en Tiempo Real - ESP32</h1>
+  <h1>📡 Datos desde ESP32</h1>
   <div class="dato">Gas: <span id="gas">--</span></div>
   <div class="dato">Temperatura: <span id="temp">--</span> °C</div>
   <div class="dato">Humedad: <span id="hum">--</span> %</div>
@@ -43,6 +44,7 @@
 
     client.onMessageArrived = function (message) {
       console.log("Mensaje recibido:", message.destinationName, message.payloadString);
+
       if (message.destinationName === "esp32/gas") {
         document.getElementById("gas").textContent = message.payloadString;
       } else if (message.destinationName === "esp32/temp") {
@@ -53,16 +55,16 @@
     };
 
     client.connect({
+      useSSL: true,
       onSuccess: function () {
         document.getElementById("status").textContent = "✅ Conectado al broker MQTT";
         client.subscribe("esp32/gas");
         client.subscribe("esp32/temp");
         client.subscribe("esp32/hum");
-        console.log("Suscripto a tópicos");
       },
       onFailure: function (e) {
         document.getElementById("status").textContent = "❌ Falló la conexión: " + e.errorMessage;
-        console.error("Error de conexión:", e);
+        console.error("Fallo la conexión MQTT:", e);
       }
     });
   </script>
