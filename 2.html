@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>Test MQTT WebSocket</title>
+  <script src="https://unpkg.com/paho-mqtt/mqttws31.js"></script>
+</head>
+<body>
+  <h1>MQTT WebSocket Test</h1>
+  <div id="status">Conectando...</div>
+  <div>Gas: <span id="gas">-</span></div>
+
+  <script>
+    const client = new Paho.MQTT.Client("broker.emqx.io", 8083, "webClient-" + Math.random());
+
+    client.onConnectionLost = (responseObject) => {
+      document.getElementById("status").textContent = "¡Conexión perdida!";
+      console.error("Conexión perdida", responseObject);
+    };
+
+    client.onMessageArrived = (message) => {
+      if (message.destinationName === "esp32/gas") {
+        document.getElementById("gas").textContent = message.payloadString;
+      }
+    };
+
+    client.connect({
+      onSuccess: () => {
+        document.getElementById("status").textContent = "Conectado al broker MQTT";
+        client.subscribe("esp32/gas");
+      },
+      onFailure: (e) => {
+        document.getElementById("status").textContent = "Fallo la conexión: " + e.errorMessage;
+        console.error("Fallo la conexión MQTT:", e);
+      }
+    });
+  </script>
+</body>
+</html>
