@@ -2,36 +2,72 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <title>Test MQTT WebSocket</title>
+  <title>Monitor ESP32 - Gas y Clima</title>
   <script src="https://unpkg.com/paho-mqtt/mqttws31.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #121212;
+      color: #fff;
+      text-align: center;
+      padding-top: 50px;
+    }
+    h1 {
+      color: #00e676;
+    }
+    .dato {
+      font-size: 24px;
+      margin: 15px 0;
+    }
+    #status {
+      margin-top: 20px;
+      font-weight: bold;
+    }
+  </style>
 </head>
 <body>
-  <h1>MQTT WebSocket Test</h1>
-  <div id="status">Conectando...</div>
-  <div>Gas: <span id="gas">-</span></div>
+  <h1>📡 Datos en Tiempo Real - ESP32</h1>
+
+  <div class="dato">Gas: <span id="gas">--</span></div>
+  <div class="dato">Temperatura: <span id="temp">--</span> °C</div>
+  <div class="dato">Humedad: <span id="hum">--</span> %</div>
+  <div id="status">⏳ Conectando...</div>
 
   <script>
-    const client = new Paho.MQTT.Client("broker.emqx.io", 8083, "webClient-" + Math.random());
+    const clientId = "webClient-" + Math.floor(Math.random() * 10000);
+    const client = new Paho.MQTT.Client("broker.emqx.io", 8083, clientId);
 
-    client.onConnectionLost = (responseObject) => {
-      document.getElementById("status").textContent = "¡Conexión perdida!";
-      console.error("Conexión perdida", responseObject);
-    };
+    // Cuando llega un mensaje
+    client.onMessageArrived = function (message) {
+      console.log("Mensaje recibido:", message.destinationName, message.payloadString);
 
-    client.onMessageArrived = (message) => {
       if (message.destinationName === "esp32/gas") {
         document.getElementById("gas").textContent = message.payloadString;
+      } else if (message.destinationName === "esp32/temp") {
+        document.getElementById("temp").textContent = message.payloadString;
+      } else if (message.destinationName === "esp32/hum") {
+        document.getElementById("hum").textContent = message.payloadString;
       }
     };
 
+    // Si se pierde la conexión
+    client.onConnectionLost = function (responseObject) {
+      document.getElementById("status").textContent = "❌ Conexión perdida";
+      console.error("Conexión perdida:", responseObject.errorMessage);
+    };
+
+    // Conectarse al broker
     client.connect({
-      onSuccess: () => {
-        document.getElementById("status").textContent = "Conectado al broker MQTT";
+      onSuccess: function () {
+        document.getElementById("status").textContent = "✅ Conectado al broker MQTT";
         client.subscribe("esp32/gas");
+        client.subscribe("esp32/temp");
+        client.subscribe("esp32/hum");
+        console.log("Suscripto a tópicos");
       },
-      onFailure: (e) => {
-        document.getElementById("status").textContent = "Fallo la conexión: " + e.errorMessage;
-        console.error("Fallo la conexión MQTT:", e);
+      onFailure: function (e) {
+        document.getElementById("status").textContent = "❌ Falló la conexión: " + e.errorMessage;
+        console.error("Error de conexión:", e);
       }
     });
   </script>
